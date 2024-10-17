@@ -1,25 +1,24 @@
-
 ---
 layout: blog-post
 categories: blog
 excerpt_separator: <!--more-->
 title: "Induction and Conjecture Generation in cvc5"
 author: Kartik Sabharwal
-date: 2024-10-03
+date: 2024-10-17
 ---
 
-This post is intended for users of SMT solvers who are interested in the automation of proofs by induction.
-Such reasoning problems frequently arise in program verification, where data structures are modeled as datatypes and algorithms are modeled as functions on these datatypes.
-We demonstrate cvc5's native support for structural induction over datatypes and its ability to synthesize lemmas that assist with such proofs, as described by Reynolds and Kuncak in [Induction for SMT Solvers][4].
+This post is intended for users of SMT solvers who are interested in the automation of proofs by induction. We demonstrate cvc5's native support for structural induction over datatypes and its ability to synthesize lemmas that assist with such proofs, as described by Reynolds and Kuncak in [Induction for SMT Solvers][4]
 <!--more-->
 
 ## A Preliminary Example
 
-Consider a datatype 'Lst' whose terms represent finite lists of some fixed type  \\(X\\) .
+Users of automated theorem provers, such as SMT solvers, often want to know if these systems can use induction to reason about functions on datatypes. Such reasoning problems frequently arise in program verification, where data structures are modeled as datatypes and algorithms are modeled as functions on these datatypes.
+
+Consider a datatype  \\(\mathrm{Lst}\\)  whose terms represent finite lists of some fixed type  \\(X\\) .
 
 $$\mathrm{Lst} = \mathrm{Nil} \mid \mathrm{Cons}(\mathrm{head}{:}X, \mathrm{tail}{:}\mathrm{Lst})$$
 
-Also consider recursive axiomatizations of the functions 'length' and 'append'.
+Also consider recursive axiomatizations of the functions  \\(\mathrm{length}\\)  and  \\(\mathrm{append}\\) .
 
 $$\begin{array}{lll}
  &\mathrm{length}(\mathrm{Nil}) & = 0 \\
@@ -33,7 +32,7 @@ Let us prove the formula below.
 
 $$\forall xs, ys{:}\mathrm{Lst}.\, \mathrm{length}(\mathrm{append}(xs, ys)) = \mathrm{length}(xs) + \mathrm{length}(ys)$$
 
-One possible proof uses structural induction on  \\(xs\\) , which splits the goal into two subgoals, with one subgoal per Lst constructor.
+One possible proof uses structural induction on  \\(xs\\) , which splits the goal into two subgoals, with one subgoal per  \\(\mathrm{Lst}\\)  constructor.
 
 $$\forall ys{:}\mathrm{Lst}.\, \mathrm{length}(\mathrm{append}(\mathrm{Nil}, ys)) = \mathrm{length}(\mathrm{Nil}) + \mathrm{length}(ys)$$
 
@@ -46,7 +45,7 @@ $$\left( \begin{array}{lll}
  \Rightarrow  &\mathrm{length}(\mathrm{append}(\mathrm{Cons}(x, xs), ys)) & = \mathrm{length}(\mathrm{Cons}(x, xs)) + \mathrm{length}(ys) \\
 \end{array} \right)$$
 
-The conjunction of the above subgoals implies, and is implied by, the original goal. The subgoal where  \\(xs\\)  is replaced with 'Nil' is commonly called the _base case_, whereas the subgoal in which  \\(xs\\)  is replaced with  \\(\mathrm{Cons}(x, xs)\\)  is called the _induction step_. In this proof, both the base case and the induction step can be proved using the axioms for 'length' and 'append' without resorting to a nested induction.
+The conjunction of the above subgoals implies, and is implied by, the original goal. The subgoal where  \\(xs\\)  is replaced with  \\(\mathrm{Nil}\\)  is commonly called the _base case_, whereas the subgoal in which  \\(xs\\)  is replaced with  \\(\mathrm{Cons}(x, xs)\\)  is called the _induction step_. In this proof, both the base case and the induction step can be proved using the axioms for  \\(\mathrm{length}\\)  and  \\(\mathrm{append}\\)  without resorting to a nested induction.
 
 Concretely, the base case can be discharged as follows.
 
@@ -71,7 +70,7 @@ In the next section, we will translate this problem into SMT-LIB so that it may 
 
 ## Induction and SMT Solvers
 
-We can translate the definitions of 'Lst', 'length' and 'append', as well as the goal into SMT-LIB syntax, since this common standard supports the theories of datatypes, uninterpreted functions, and integer arithmetic.
+We can translate the definitions of  \\(\mathrm{Lst}\\) ,  \\(\mathrm{length}\\)  and  \\(\mathrm{append}\\) , as well as the goal into SMT-LIB syntax, since this common standard supports the theories of datatypes, uninterpreted functions, and integer arithmetic.
 
 ```
 ;; length-append.smt2
@@ -146,7 +145,7 @@ $$\begin{array}{clrl}
 \end{array} \quad [G_2]$$
 
 **Step 2**  
-Induct on  \\(ys\\)  to split  \\(G_1\\)  into two further subgoals, each of which can be proved using just the definitions of 'length' and 'append'. Thus  \\(G_1\\)  is discharged, but it remains relevant as we will use it to discharge a subsequent subgoal in Step 3.
+Induct on  \\(ys\\)  to split  \\(G_1\\)  into two further subgoals, each of which can be proved using just the definitions of  \\(\mathrm{length}\\)  and  \\(\mathrm{append}\\) . Thus  \\(G_1\\)  is discharged, but it remains relevant as we will use it to discharge a subsequent subgoal in Step 3.
 
 **Step 3**  
 Only  \\(G_2\\)  remains to be proved. Treating its premise \\(\forall ys{:}\mathrm{Lst}. \mathrm{length}(\mathrm{append}(xs, ys)) = \mathrm{length}(\mathrm{append}(ys, xs))\\) as a background assumption, we induct on  \\(ys\\)  to split its conclusion into two more subgoals.
@@ -196,7 +195,7 @@ Even systems that apply induction at the meta level may benefit from sending the
 
 In some situations even nested structural induction is insufficient to prove a valid goal. It is then necessary to assist the solver in its search for a proof by providing appropriate lemmas. To this end, cvc5 is able to perform a specific form of lemma synthesis. cvc5 uses heuristics to conjecture equalities between known terms, attempts to prove their validity by induction, then uses the proved conjectures as lemmas.
 
-To see an example, consider the inductive datatype 'Nat.
+To see an example, consider the inductive datatype  \\(\mathrm{Nat}\\) .
 
 $$\mathrm{Nat} = \mathrm{Zero} \mid \mathrm{Succ}(\mathrm{pred}{:}\mathrm{Nat})$$
 
@@ -215,7 +214,7 @@ We will prove that the definitions are in fact equivalent.
 
 $$\forall x, y{:}\mathrm{Nat}.\, \mathrm{add}(x, y) = \mathrm{deep\text{-}add}(x, y)$$
 
-A pen-and-paper proof might use a single course-of-values induction on  \\(y\\)  to prove the goal. However cvc5 lacks native support for course-of-values induction, as this would allow the active quantifier instantiation strategy to influence the effectiveness of the induction. Therefore the solver attempts a proof using successive weak structural induction. Even in the absence of conjecture generation, cvc5 is able to discharge all subgoals except for the following pair.
+A pen-and-paper proof might use a single course-of-values induction on  \\(y\\)  to prove the goal. However cvc5 lacks native support for course-of-values induction, as this would allow the active quantifier instantiation strategy to influence the effectiveness of the induction. Therefore the solver attempts a proof using successive weak structural inductions. Even in the absence of conjecture generation, cvc5 is able to discharge all subgoals except for the following pair.
 
 $$\begin{array}{crl}
  &\mathrm{add}(\mathrm{Zero}, y) & = \mathrm{deep\text{-}add}(\mathrm{Zero}, y) \\
@@ -230,7 +229,7 @@ $$\begin{array}{crl}
  \Rightarrow  &\mathrm{add}(\mathrm{Succ}(x), \mathrm{Succ}(y)) & = \mathrm{deep\text{-}add}(\mathrm{Succ}(x), \mathrm{Succ}(y)) \\
 \end{array}$$
 
-This pair of subgoals shares a common feature that hinders cvc5's default proof strategy. Namely in either subgoal, the arguments to 'deep-add' in the conclusion do not align with the arguments to 'deep-add' in the premises. To make progress in the proof the solver may be provided a lemma that aligns the arguments to 'deep-add' in the conclusion with those in the premises. Once cvc5's conjecture generation module is enabled, the solver can automatically conjecture and prove a sufficient lemma, which is
+This pair of subgoals shares a common feature that hinders cvc5's default proof strategy. Namely in either subgoal, the arguments to  \\(\mathrm{deep\text{-}add}\\)  in the conclusion do not align with the arguments to  \\(\mathrm{deep\text{-}add}\\)  in the premises. To make progress in the proof the solver may be provided a lemma that aligns the arguments to  \\(\mathrm{deep\text{-}add}\\)  in the conclusion with those in the premises. Once cvc5's conjecture generation module is enabled, the solver can automatically conjecture and prove a sufficient lemma, which is
 
 $$\forall x, y{:}\mathrm{Nat}.\, \mathrm{deep\text{-}add}(x, \mathrm{Succ}(y)) = \mathrm{Succ}(\mathrm{deep\text{-}add}(x, y))$$
 
@@ -252,7 +251,7 @@ $$\begin{array}{clr}
 = &\mathrm{deep\text{-}add}(\mathrm{Succ}(x), \mathrm{Succ}(y)) &[\text{by lemma}] \\
 \end{array}$$
 
-This concludes the proof that 'add' and 'deep-add' are equivalent.
+This concludes the proof that  \\(\mathrm{add}\\)  and  \\(\mathrm{deep\text{-}add}\\)  are equivalent.
 
 Our intended encoding of the above example in SMT-LIB syntax is shown below.
 
@@ -313,19 +312,19 @@ unsat
 
 Though cvc5 can prove many inductive properties over datatypes, it is only fair to acknowledge that the efficacy of induction and conjecture generation depends on how the problem is posed to the solver. Specifically,
 
-- cvc5 will only induct on variables of datatype sort bound using an existential quantifier that occurs positively, or a universal quantifier that occurs negatively. It will not induct on variables introduced with the 'declare-const' SMT-LIB command, even if they are of datatype sort.
+- cvc5 will only induct on variables of datatype sort bound using an existential quantifier that occurs positively, or a universal quantifier that occurs negatively. It will not induct on variables introduced with the `declare-const` SMT-LIB command, even if they are of datatype sort.
 
 - cvc5 inducts on variables according to the order in which they are bound. When dealing with an assertion of the form `(assert (not (forall ((b Nat) (a Nat)) (P a b))))`, the solver will induct on the variable `b` first and then on `a`.
 
-- Functions defined using the SMT-LIB 'define-fun-rec' command are treated differently than function symbols introduced with the SMT-LIB 'declare-fun' command and then axiomatized using universally quantified formulas. In the latter case it also matters which quantifier patterns are associated with the universally quantified axioms, as evidenced by the third axiom for 'deep-add' in our final example.
+- Functions defined using the SMT-LIB `define-fun-rec` command are treated differently than function symbols introduced with the SMT-LIB `declare-fun` command and then axiomatized using universally quantified formulas. In the latter case it also matters which quantifier patterns are associated with the universally quantified axioms, as evidenced by the third axiom for  \\(\mathrm{deep\text{-}add}\\)  in our final example.
 
-It also helps to keep in mind that cvc5 only generates equality conjectures between terms of datatype sort. Consequently the solver will not propose an equality conjecture between two terms of a primitive sort, such as 'Int' or 'Bool'.
+It also helps to keep in mind that cvc5 only generates equality conjectures between terms of datatype sort. Consequently the solver will not propose an equality conjecture between two terms of a primitive sort, such as `Int` or `Bool`.
 
 ## Conclusion
 
 We have seen how cvc5 natively supports structural induction and is able to synthesize useful lemmas for induction proofs, and we hope that this encourages you to experiment with cvc5's features for inductive reasoning.
 
-#### Kartik Sabharwal is a PhD student advised by Cesare Tinelli in the [Computational Logic Center](https://clc-uiowa.github.io/) at the University of Iowa.  His interests lie in induction and quantifier instantiation.
+#### [Kartik Sabharwal](https://fyrbll.github.io) is a PhD student advised by Cesare Tinelli in the [Computational Logic Center](https://clc-uiowa.github.io/) at the University of Iowa.  His interests lie in induction and quantifier instantiation.
 
 [1]: https://www.microsoft.com/en-us/research/wp-content/uploads/2016/12/krml218.pdf
 [2]: https://dafny.org/dafny/
